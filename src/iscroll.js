@@ -59,13 +59,13 @@ function iScroll (el, options) {
 		that.options[i] = options[i];
 	}
 
-	that.options.HWCompositing = that.options.HWCompositing && hasCompositing;
-	that.options.HWTransition = that.options.HWTransition && hasCompositing;
+	that.options.HWCompositing = options.HWCompositing && hasCompositing;
+	that.options.HWTransition = options.HWTransition && hasCompositing;
 
 	if (that.options.HWCompositing) {
 		that.scroller.style.cssText += '-webkit-transition-property:-webkit-transform;-webkit-transform-origin:0 0;-webkit-transform:' + trnOpen + '0,0' + trnClose;
 	} else {
-		that.scroller.style.cssText += '-webkit-transition-property:top,left;-webkit-transform-origin:0 0;top:0;left:0';
+		that.scroller.style.cssText += '-webkit-transition-property:top,left;-moz-transition-property:top,left;transition-property:top,left;-webkit-transform-origin:0 0;top:0;left:0';
 	}
 
 	if (that.options.HWTransition) {
@@ -237,9 +237,12 @@ iScroll.prototype = {
 		that.x = that.hScroll ? x : 0;
 		that.y = that.vScroll ? y : 0;
 
-		that.scroller.style.webkitTransform = trnOpen + that.x + 'px,' + that.y + 'px' + trnClose + ' scale(' + that.scale + ')';
-//		that.scroller.style.left = that.x + 'px';
-//		that.scroller.style.top = that.y + 'px';
+		if (that.options.HWCompositing) {
+			that.scroller.style.webkitTransform = trnOpen + that.x + 'px,' + that.y + 'px' + trnClose + ' scale(' + that.scale + ')';
+		} else {
+			that.scroller.style.left = that.x + 'px';
+			that.scroller.style.top = that.y + 'px';
+		}
 
 		that._indicatorPos('h');
 		that._indicatorPos('v');
@@ -334,6 +337,7 @@ iScroll.prototype = {
 
 		if (that.options.onScrollStart) that.options.onScrollStart.call(that);
 
+		// @TODO -- BeeDesk's change. To allow it to coexist with gestures.js
 		if (hasTouch && e.touches.length > 1) {
 			that.scrolling = false;
 			that.resetPosition();
@@ -453,7 +457,10 @@ iScroll.prototype = {
 		that._unbind(MOVE_EV);
 		that._unbind(END_EV);
 		that._unbind(CANCEL_EV);
-		
+		if (!hasTouch) {
+			document.removeEventListener('mouseout', that, false);
+		}
+
 		if (that.zoomed) return;
 
 		if (!that.moved) {
@@ -928,21 +935,26 @@ iScroll.prototype = {
 			}
 		} else if (that.options.snap) {
 			that.pagesX = [];
-			while (pos >= that.maxScrollX) {
+
+			var limit = 10;
+			while (limit-- >= 0 && pos >= that.maxScrollX) {
 				that.pagesX[page] = pos;
 				pos = pos - that.wrapperW;
 				page++;
 			}
+			pos = that.maxScrollX - 1;
 			if (that.maxScrollX%that.wrapperW) that.pagesX[that.pagesX.length] = that.maxScrollX - that.pagesX[that.pagesX.length-1] + that.pagesX[that.pagesX.length-1];
 
 			pos = 0;
 			page = 0;
 			that.pagesY = [];
-			while (pos >= that.maxScrollY) {
+			limit = 10;
+			while (limit-- >= 0 && pos >= that.maxScrollY) {
 				that.pagesY[page] = pos;
 				pos = pos - that.wrapperH;
 				page++;
 			}
+			pos = that.maxScrollY - 1;
 			if (that.maxScrollY%that.wrapperH) that.pagesY[that.pagesY.length] = that.maxScrollY - that.pagesY[that.pagesY.length-1] + that.pagesY[that.pagesY.length-1];
 		}
 		
